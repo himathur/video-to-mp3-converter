@@ -9,7 +9,7 @@ server = Flask(__name__)
 server.config["MONGO_URI"] = "mongodb://host.minikube.internal:27017/videos"
 
 # mongo db connection
-mongo = PyMongo(server)
+mongo = PyMongo(server, uri="mongodb://host.minikube.internal:27017/videos")
 fs = gridfs.GridFS(mongo.db)
 
 # pika for rabbitmq connection
@@ -51,5 +51,5 @@ def download():
     pass
 
 
-if "__name__" == "__main__":
+if __name__ == "__main__":
     server.run(host="0.0.0.0", port=8080)
