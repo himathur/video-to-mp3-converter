@@ -9,5 +9,5 @@ COPY ./requirements.txt /app
 RUN pip install --no-cache-dir --requirement /app/requirements.txt
 #code changes should be after the requirements file change
 COPY . /app/ 
-EXPOSE 3000
+
 CMD ["python3", "consumer.py"]
