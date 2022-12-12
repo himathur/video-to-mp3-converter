@@ -1,4 +1,7 @@
-import os,gridfs,pika,json
+import os
+import gridfs
+import pika
+import json
 from flask import Flask, request, send_file
 from flask_pymongo import PyMongo
 from auth import validate
@@ -19,7 +22,10 @@ channel = connection.channel()
 
 @server.route("/login", methods=["POST"])
 def login():
+    print("reached login function")
     token, err = access.login(request)
+    print(f"token: {token}")
+    print(f" error: {err}")
 
     if not err:
         return token

@@ -1,8 +1,6 @@
 import jwt
 import datetime
 import os
-import os
-import datetime
 from flask import Flask, request
 from flask_mysqldb import MySQL
 
@@ -13,7 +11,7 @@ mysql = MySQL(server)
 # config
 # server.config is dictionary here
 server.config["MYSQL_HOST"] = os.environ.get("MYSQL_HOST")
-server.config["MYSQL_USER"] = os.environ.get("MYSQL_USER") 
+server.config["MYSQL_USER"] = os.environ.get("MYSQL_USER")
 server.config["MYSQL_PASSWORD"] = os.environ.get("MYSQL_PASSWORD")
 server.config["MYSQL_DB"] = os.environ.get("MYSQL_DB")
 server.config["MYSQL_PORT"] = os.environ.get("MYSQL_PORT")
@@ -25,41 +23,47 @@ def login():
     # get basic creds from authorization header : auth.username -> email / auth.password
     auth = request.authorization
     if not auth:
-        return "missing credientials", 401
+        return "missing credentials", 401
 
     # check db for username and password
+    print("making connection to mysql")
+    print(f"{os.environ.get('MYSQL_HOS')}")
+    print(f"{os.environ.get('MYSQL_USER')}")
+    print(f"{os.environ.get('MYSQL_DB')}")
+    print(f"{os.environ.get('MYSQL_PASSWORD')}")
+    print(f"{os.environ.get('MYSQL_PORT')}")
     cur = mysql.connection.cursor()
     res = cur.execute(
-        f"SELECT email, password FROM user WHERE email={auth.username}")
-
+        "SELECT email, password FROM user WHERE email=%s", (auth.username,)
+    )
     if res > 0:
         user_row = cur.fetchone()
         email = user_row[0]
         password = user_row[1]
 
-        if auth.username != email or auth.username != password:
-            return "invalid creds", 401
+        if auth.username != email or auth.password != password:
+            return "invalid credentials", 401
         else:
             return createJWT(auth.username, os.environ.get("JWT_SECRET"), True)
 
     else:
-        return "invalid creds", 401
+        return "invalid credentials", 401
 
 
 @server.route("/validate", methods=["POST"])
 def validate():
     encoded_jwt = request.headers["Authorization"]
     print(encoded_jwt)
-    #Authorization:Bearer <token>
+    # Authorization:Bearer <token>
 
     if not encoded_jwt:
-        return "missing credientials", 401
+        return "missing credentials", 401
 
-    encoded_jwt = encoded_jwt.split(" ")[1] # this will return the token
+    encoded_jwt = encoded_jwt.split(" ")[1]  # this will return the token
 
     try:
         decoded = jwt.decode(
-            encoded_jwt, os.environ.get("JWT_SECRET"), algorithm=["HS256"]
+            encoded_jwt, os.environ.get("JWT_SECRET"), algorithms=["HS256"]
         )
     except:
         return "not authorized", 403
@@ -70,7 +74,7 @@ def createJWT(username, secret, authz):
     return jwt.encode(
         {
             "username": username,
-            "exp": datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelata(days=1),
+            "exp": datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(days=1),
             "iat": datetime.datetime.utcnow(),
             "admin": authz,
         },
