@@ -2,20 +2,24 @@ import jwt
 import datetime
 import os
 from flask import Flask, request
-from flask_mysqldb import MySQL
+# from flask_mysqldb import MySQL
+
+import mysql.connector
+from mysql.connector import errorcode
 
 # variables
 server = Flask(__name__)
-mysql = MySQL(server)
+# mysql = MySQL(server)
 
 # config
-# server.config is dictionary here
-server.config["MYSQL_HOST"] = os.environ.get("MYSQL_HOST")
-server.config["MYSQL_USER"] = os.environ.get("MYSQL_USER")
-server.config["MYSQL_PASSWORD"] = os.environ.get("MYSQL_PASSWORD")
-server.config["MYSQL_DB"] = os.environ.get("MYSQL_DB")
-server.config["MYSQL_PORT"] = os.environ.get("MYSQL_PORT")
-# print(server.config["MYSQL_HOST"])
+config = {
+    'user': os.environ.get("MYSQL_USER"),
+    'password': os.environ.get("MYSQL_PASSWORD"),
+    'host': os.environ.get("MYSQL_HOST"),
+    'database': os.environ.get("MYSQL_DB"),
+    'port': os.environ.get("MYSQL_PORT"),
+    'raise_on_warnings': True
+}
 
 
 @server.route("/login", methods=["POST"])
@@ -26,21 +30,29 @@ def login():
         return "missing credentials", 401
 
     # check db for username and password
-    print("making connection to mysql")
-    print(f"{os.environ.get('MYSQL_HOS')}")
-    print(f"{os.environ.get('MYSQL_USER')}")
-    print(f"{os.environ.get('MYSQL_DB')}")
-    print(f"{os.environ.get('MYSQL_PASSWORD')}")
-    print(f"{os.environ.get('MYSQL_PORT')}")
-    cur = mysql.connection.cursor()
-    res = cur.execute(
-        "SELECT email, password FROM user WHERE email=%s", (auth.username,)
-    )
-    if res > 0:
-        user_row = cur.fetchone()
-        email = user_row[0]
-        password = user_row[1]
+    try:        
+        cnx = mysql.connector.connect(**config)
+        print(cnx, flush=True)
+    except mysql.connector.Error as err:
+        if err.errno == errorcode.ER_ACCESS_DENIED_ERROR:
+            print("Something is wrong with your user name or password")
+        elif err.errno == errorcode.ER_BAD_DB_ERROR:
+            print("Database does not exist")
+        else:
+            print(err)
 
+    cur = cnx.cursor()
+    print(cur)
+
+    cur.execute("SELECT email, password FROM user WHERE email=%s",
+                (auth.username,))
+    result = cur.fetchall()
+    print(f"printing {result}", flush=True)
+    for x in result:
+        print(x, flush=True)
+    if len(result) > 0:
+        email = result[0][0]
+        password = result[0][1]
         if auth.username != email or auth.password != password:
             return "invalid credentials", 401
         else:
@@ -84,4 +96,4 @@ def createJWT(username, secret, authz):
 
 
 if __name__ == "__main__":
-    server.run(port=5000, host="0.0.0.0")
+    server.run(port=5000, host="0.0.0.0", debug=True)
