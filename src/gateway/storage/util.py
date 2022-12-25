@@ -11,9 +11,11 @@ def upload(f, fs, channel, access):
 
     try:
         fid = fs.put(f)
+        print("Uploading to mongo", flush=True)
     except Exception as err:
-        print(err)
-        return "internal server error", 500
+        print("Uploading to mongo", flush=True)
+        print(f"error while uploading to mongo {err}", flush=True)
+        return "internal server error, somthing happened while upload", 500
     message = {
         "video_fid": str(fid),
         "mp3_fid": None,
@@ -29,6 +31,6 @@ def upload(f, fs, channel, access):
             ),
         )
     except Exception as err:
-        print(err)
+        print(f"error while rabbitmq is called {err}", flush=True)
         fs.delete(fid)
         return "internal server error", 500
