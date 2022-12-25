@@ -8,16 +8,22 @@ from pymongo import MongoClient
 from auth import validate
 from auth_svc import access
 from storage import util
+from bson.objectid import ObjectId
 
 server = Flask(__name__)
 # server.config["MONGO_URI"] = "mongodb://root:password@host.minikube.internal:27017/videos"
 # mongo db connection
 # mongo = PyMongo(server, uri="mongodb://root:password@host.minikube.internal:27017/videos")
 # uri = "mongodb://root:password@host.minikube.internal:27017/videos"
-client = MongoClient(host="host.minikube.internal:27017",
-                     username="root", password="password", authSource="admin")
-db = client["videos"]
-fs = gridfs.GridFS(db)
+video_client = MongoClient(host="host.minikube.internal:27017",
+                           username="root", password="password", authSource="admin")
+video_db = video_client["videos"]
+fs_videos = gridfs.GridFS(video_db)
+
+mp3_client = MongoClient(host="host.minikube.internal:27017",
+                         username="root", password="password", authSource="admin")
+mp3_db = mp3_client["mp3s"]
+fs_mp3s = gridfs.GridFS(mp3_db)
 
 # pika for rabbitmq connection
 connection = pika.BlockingConnection(pika.ConnectionParameters(
@@ -41,6 +47,8 @@ def login():
 @server.route("/upload", methods=["POST"])
 def upload():
     access, err = validate.token(request)
+    if err:
+        return err
     access = json.loads(access)
     # json object to python object
     if access["admin"]:
@@ -49,7 +57,7 @@ def upload():
 
         for _, f in request.files.items():
             print(f"gateway Upload function called", flush=True)
-            err = util.upload(f, fs, channel, access)
+            err = util.upload(f, fs_videos, channel, access)
             print(f"Error of Upload function in Util", flush=True)
             if err:
                 return err
@@ -60,7 +68,22 @@ def upload():
 
 @server.route("/download", methods=["Get"])
 def download():
-    pass
+    access, err = validate.token(request)
+    if err:
+        return err
+    access = json.loads(access)
+    if access["admin"]:
+        fid_string = request.args.get("fid")
+        if not fid_string:
+            return "fid is required", 400
+        # fid exits
+        try:
+            out = fs_mp3s.get(ObjectId(fid_string))
+            return send_file(out, download_name=f"{fid_string}.mp3")
+        except:
+            print(err)
+            return f"internal server error while downloading", 500
+    return "not authorized", 401
 
 
 if __name__ == "__main__":

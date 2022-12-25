@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notfication
+spec:
+  selector:
+    matchLabels:
+      app: notfication
+  replicas: 4
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 8
+  template:
+    metadata:
+      labels:
+        app: notfication
+    spec:
+      containers:
+        - name: notfication
+          image: himmathur55/notfication:latest
+          envFrom:
+            - configMapRef:
+                name: notfication-configmap
+            - secretRef:
+                name: notfication-secret
+          resources:
+            limits:
+              memory: "1500Mi"
+              cpu: "500m"

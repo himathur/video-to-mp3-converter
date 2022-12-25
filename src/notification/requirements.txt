@@ -1,0 +1,4 @@
+smtplib
+pika
+email
+pylint
