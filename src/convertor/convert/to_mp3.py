@@ -12,7 +12,7 @@ def start(message, fs_videos, fs_mp3s, channel):
     # empty temp file in tmp dir
     tf = tempfile.NamedTemporaryFile()
     # video contents
-    out = fs_videos.get(ObjectId[message["video_fid"]])
+    out = fs_videos.get(ObjectId(message["video_fid"]))
     # add video contents to empty file
     tf.write(out.read())
     # create audio from temp video vide
@@ -27,7 +27,7 @@ def start(message, fs_videos, fs_mp3s, channel):
     # save the file to mongodb
     f = open(tf_path, "rb")
     data = f.read()
-    fid = fs_mp3s.puth(data)
+    fid = fs_mp3s.put(data)
     f.close()
     os.remove(tf_path)
 
@@ -38,7 +38,7 @@ def start(message, fs_videos, fs_mp3s, channel):
         channel.basic_publish(
             exchange="",
             routing_key=os.environ.get("MP3_QUEUE"),
-            body=json.dimps(message),
+            body=json.dumps(message),
             properties=pika.BasicProperties(
                 delivery_mode=pika.spec.PERSISTENT_DELIVERY_MODE
             )

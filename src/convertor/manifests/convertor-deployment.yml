@@ -26,5 +26,5 @@ spec:
                 name: convertor-secret
           resources:
             limits:
-              memory: "128Mi"
+              memory: "1500Mi"
               cpu: "500m"
